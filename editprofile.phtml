@@ -70,7 +70,7 @@
 					<?php echo __("Company Locality"); ?>
 				</label>
 				<div class="admin__field-control">
-					<input type="text" name="company_locality" class="admin__control-text" value="<?php echo $seller['company_locality']; ?>"  />
+					<input type="text" name="company_locality" id="company_locality" class="admin__control-text" value="<?php echo $seller['company_locality']; ?>"  />
 				</div>
 			</div>
 			<div class="admin__field">
@@ -145,9 +145,9 @@
 					<input type="text" name="address" id="address" class="admin__control-text gm-err-autocomplete" >
 				   </div>
 				 
-				<button id="map-location" type="button">Find Us</button>	
+				<button id="map-location" type="button">Find Location</button>	
 
-				<img src="http://40.71.47.14:86/pub/media/slider/0_cWpsf9D3g346Va20.gif" id="img" style="display:none"/ >
+				<img src="http://40.71.47.14:86/pub/media/slider/0_cWpsf9D3g346Va20.gif" id="img"  style="display:none"/ >
 
 			</div>
 				<div class="admin__field">
@@ -155,7 +155,7 @@
 					<?php echo __("Longitiude"); ?>
 				</label>
 				<div class="admin__field-control">
-					<input type="text" name="longitude" class="admin__control-text" value="<?php echo $seller['longitude']; ?>" />
+					<input type="text" name="longitude" class="admin__control-text" id="longitude" value="<?php echo $seller['longitude']; ?>" />
 				</div>
 			</div>
 			<div class="admin__field">
@@ -163,7 +163,7 @@
 					<?php echo __("Latitude"); ?>
 				</label>
 				<div class="admin__field-control">
-					<input type="text" name="latitude" class="admin__control-text" value="<?php echo $seller['latitude']; ?>" />
+					<input type="text" name="latitude" class="admin__control-text" id="latitude" value="<?php echo $seller['latitude']; ?>" />
 				</div>
 			</div>
 		</fieldset>
@@ -322,7 +322,8 @@
 					</div>
 				</fieldset>
 			</fieldset>	
-		</div>	
+		</div>
+<p id="demo"><p>		
 	</div>	
 </form>	
 <script type="text/javascript">
@@ -485,11 +486,17 @@
     require(["jquery"],function($) {
 
         $(document).ready(function() {
-           document.getElementById('map-location').addEventListener('click', function() {
+           //document.getElementById('map-location').addEventListener('click', function() {
+			$('#map-location').click(function(){
+			$('body').trigger('processStart');
            var addressval = $('#address').val();
-            $('#img').show();
-         	var Count=addressval.length;
-			if(Count>2){
+           if (addressval=='') {
+           	alert('Please Enter Location');
+           }
+           else {
+            //$('#img').show();
+         	//var Count=addressval.length;
+			 
 			  var customurl = "<?php echo $block->getUrl('catalog/ajax', ["_secure" => $this->getRequest()->isSecure()]) ?>";
                 $.ajax({
                 type: 'POST',
@@ -498,6 +505,7 @@
                data: {'addressval': addressval },
       
                complete: function(response) {    
+					$('body').trigger('processStop');
         			//console.log(">>>>>>response>>>>>",response.responseText);
         			 latitude = response.responseJSON.latitude; 
         			 longitude = response.responseJSON.longitude; 
@@ -520,13 +528,10 @@
                 error: function (xhr, status, errorThrown) {
                     console.log('Error happens. Try again.');
                 }
-              });		
-			   }
-			else{
-				return false;
-				
-			}
-             
+              });
+			   
+			  
+             }
            
 			});
         });
@@ -547,7 +552,7 @@
   			data['longitude'] = '23';
   		}
   		console.log("connnnnnnn>>>>>",data);
-       var map_options = {
+        var map_options = {
 
             zoom: 14,
             center: new google.maps.LatLng(data['latitude'], data['longitude'])
@@ -558,14 +563,61 @@
             draggable: true,
             position: new google.maps.LatLng(data['latitude'], data['longitude'])
         });
+
         infowindow = new google.maps.InfoWindow({
             content: data['formatted_address']
         });
         google.maps.event.addListener(marker, "click", function () {
             infowindow.open(map, marker);
         });
+		google.maps.event.addListener(marker, 'dragend', function(event) 
+			{
+			
+				var latitude = event.latLng.lat();
+				var longitude = event.latLng.lng();
+				jQuery('#longitude').val(longitude);
+				jQuery('#latitude').val(latitude);
+				
+				
+			//	$('#demo').val(longitude);
+			
+							 
+				geocodePosition(marker.getPosition());
+			});
         infowindow.open(map, marker);
     }
+	function geocodePosition(pos) 
+      {
+	    geocoder = new google.maps.Geocoder();
+         geocoder.geocode
+    (
+	{
+        latLng: pos
+    }, 
+        function(results, status) 
+        {
+			
+            if (status == google.maps.GeocoderStatus.OK) 
+            {
+				console.log(results);
+				console.log(results[0]);
+				
+				
+			jQuery('#company_locality').val(results[0].formatted_address);
+
+			  //var addressval = $('#address').val(results[0].formatted_address);
+			  //jQuery('#latitude').val(latitude);
+			  
+		
+                
+            } 
+            else 
+            {
+                $("#mapErrorMsg").html('Cannot determine address at this location.'+status).show(100);
+            }
+        }
+    );
+}
    	
 function getData(){
 	var data = [];
